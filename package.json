@@ -6,8 +6,6 @@
   "dependencies": {},
   "devDependencies": {
     "asana": "^0.14.1",
-    "cookie-parser": "^1.4.3",
-    "express": "^4.14.0",
     "request": "^2.74.0"
   },
   "scripts": {
