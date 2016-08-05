@@ -47,8 +47,8 @@ function getAccessToken(client) {
             console.log(
               'Copy the following refresh token into your config file, and then restart this application:\n\n' +
               credentials.refresh_token);
+            process.exit(0);
           });
-          process.exit(0);
       });
     });
 }
@@ -82,91 +82,91 @@ function syncTasks(client, accessToken) {
       });
     })
 
-  .then(function (response) {
-    return response.data;
-  })
+    .then(function (response) {
+      return response.data;
+    })
 
-  .filter(function (task) {
-    /* Don't include any tasks which made it through despite being incomplete */
-    if (task.completed !== true) {
-      return false;
-    }
+    .filter(function (task) {
+      /* Don't include any tasks which made it through despite being incomplete */
+      if (task.completed !== true) {
+        return false;
+      }
 
-    /* Check to see if the task.external.data.passedToIDT property is set and truthy. Exclude if so */
-    if (task.hasOwnProperty('external')) {
-      if (task.external.hasOwnProperty('data')) {
-        var dataObj = JSON.parse(task.external.data);
-        if (dataObj.passedToIDT) {
-          oldTasks++;
-          return false;
+      /* Check to see if the task.external.data.passedToIDT property is set and truthy. Exclude if so */
+      if (task.hasOwnProperty('external')) {
+        if (task.external.hasOwnProperty('data')) {
+          var dataObj = JSON.parse(task.external.data);
+          if (dataObj.passedToIDT) {
+            oldTasks++;
+            return false;
+          }
         }
       }
-    }
 
-    newTasks++;
-    return true;
-  })
+      newTasks++;
+      return true;
+    })
 
-  .then(function (tasks) {
-    tasks.forEach(function (task) {
-      /* Build a list of projects to add as tags in IDT */
-      var projectList = [];
-      task.projects.forEach(function (project) {
-        projectList.push('#' + project.name.split(' ')
-          .join('-'));
+    .then(function (tasks) {
+      tasks.forEach(function (task) {
+        /* Build a list of projects to add as tags in IDT */
+        var projectList = [];
+        task.projects.forEach(function (project) {
+          projectList.push('#' + project.name.split(' ')
+            .join('-'));
+        });
+
+        /* Send off the task to iDoneThis. */
+        request.post({
+          url: 'https://idonethis.com/api/v0.1/dones/',
+          headers: {
+            'Authorization': 'Token ' + iDoneThisToken
+          },
+          body: {
+            "team": iDoneThisTeam,
+            "raw_text": task.name + ' ' + projectList.join(
+              ' ')
+          },
+          json: true,
+        }, function (error, response, body) {
+
+          /* Print the error, if there is one */
+          if (error) {
+            console.log(JSON.stringify(response, null, 2));
+          } else {
+
+            /* Otherwise, update this task in Asana */
+            var data = {
+              external: {
+                'id': "idtsync" + task.id,
+                'data': JSON.stringify({
+                  "passedToIDT": true,
+                })
+              }
+            };
+
+            client.tasks.update(task.id, data)
+              .catch(function (err) {
+
+                /* Report any errors */
+                console.log(JSON.stringify(err, null, 2));
+              });
+          }
+        });
       });
+      return tasks;
+    })
 
-      /* Send off the task to iDoneThis. */
-      request.post({
-        url: 'https://idonethis.com/api/v0.1/dones/',
-        headers: {
-          'Authorization': 'Token ' + iDoneThisToken
-        },
-        body: {
-          "team": iDoneThisTeam,
-          "raw_text": task.name + ' ' + projectList.join(
-            ' ')
-        },
-        json: true,
-      }, function (error, response, body) {
+    .then(function (tasks) {
 
-        /* Print the error, if there is one */
-        if (error) {
-          console.log(JSON.stringify(response, null, 2));
-        } else {
+      /* Finally, write out what happened to each of these tasks */
+      console.log(newTasks + '/' + (newTasks + oldTasks) +
+        ' tasks passed to iDoneThis.');
+    })
 
-          /* Otherwise, update this task in Asana */
-          var data = {
-            external: {
-              'id': "idtsync" + task.id,
-              'data': JSON.stringify({
-                "passedToIDT": true,
-              })
-            }
-          };
-
-          client.tasks.update(task.id, data)
-            .catch(function (err) {
-
-              /* Report any errors */
-              console.log(JSON.stringify(err, null, 2));
-            });
-        }
-      });
+    .catch(function (err) {
+      console.log(err)
     });
-    return tasks;
-  })
-
-  .then(function (tasks) {
-
-    /* Finally, write out what happened to each of these tasks */
-    console.log(newTasks + '/' + (newTasks + oldTasks) +
-      ' tasks passed to iDoneThis.');
-  })
-
-  .catch(function (err) {
-    console.log(err)
-  });
 }
 
 setInterval(main, 120000);

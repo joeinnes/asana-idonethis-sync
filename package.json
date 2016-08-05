@@ -6,13 +6,11 @@
   "dependencies": {},
   "devDependencies": {
     "asana": "^0.14.1",
-    "bluebird": "^3.4.1",
     "readline": "^1.3.0",
     "request": "^2.74.0"
   },
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1"
   },
-  "author": "",
-  "license": "ISC"
+  "author": "Joe Innes"
 }
