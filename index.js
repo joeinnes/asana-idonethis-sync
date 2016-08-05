@@ -1,4 +1,5 @@
 /* eslint no-console: 0 */
+/* eslint camelcase: ["error", {properties: "never"}] */
 
 /* Required modules */
 var Asana = require("asana");
