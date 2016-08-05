@@ -103,13 +103,11 @@ function syncTasks(client) {
       }
 
       /* Check to see if the task.external.data.passedToIDT property is set and truthy. Exclude if so */
-      if (task.hasOwnProperty("external")) {
-        if (task.external.hasOwnProperty("data")) {
-          var dataObj = JSON.parse(task.external.data);
-          if (dataObj.passedToIDT) {
-            oldTasks++;
-            return false;
-          }
+      if (task.external && task.external.data) {
+        var dataObj = JSON.parse(task.external.data);
+        if (dataObj.passedToIDT) {
+          oldTasks++;
+          return false;
         }
       }
 
