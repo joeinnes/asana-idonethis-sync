@@ -30,46 +30,6 @@ function createClient() {
   return client;
 }
 
-function getAccessToken(client) {
-  if (accessTokenValidTo > new Date()) {
-    console.log("No need for a new token, old one still valid.");
-    syncTasks(client);
-    return;
-  }
-  return client.app.accessTokenFromRefreshToken(AsanaRefreshToken)
-    .then(function (creds) {
-      accessToken = creds.access_token;
-      accessTokenValidTo = new Date();
-      accessTokenValidTo.setSeconds(accessTokenValidTo.getSeconds() + creds.expires_in - 120);
-      syncTasks(client);
-    })
-    .catch(function (err) {
-      console.log(
-        "Doesn\'t look like your refresh token is good, let\'s get a new one."
-      );
-      console.log("You should go to " + client.app.asanaAuthorizeUrl() +
-        " and copy the code there");
-      var rl = readline.createInterface({
-        input: process.stdin,
-        output: process.stdout
-      });
-      rl.question("What was the code?\n\nCode: ", function (code) {
-        client.app.accessTokenFromCode(code)
-          .then(function (credentials) {
-            console.log(
-              "Copy the following refresh token into your config file, and then restart this application:\n\n" +
-              credentials.refresh_token);
-            process.exit(0);
-          });
-      });
-    });
-}
-
-function main() {
-  var client = createClient();
-  getAccessToken(client);
-}
-
 function syncTasks(client) {
   client.useOauth({
     credentials: accessToken
@@ -175,6 +135,46 @@ function syncTasks(client) {
     .catch(function (err) {
       console.log(JSON.stringify(err, null, 2));
     });
+}
+
+function getAccessToken(client) {
+  if (accessTokenValidTo > new Date()) {
+    console.log("No need for a new token, old one still valid.");
+    syncTasks(client);
+    return;
+  }
+  return client.app.accessTokenFromRefreshToken(AsanaRefreshToken)
+    .then(function (creds) {
+      accessToken = creds.access_token;
+      accessTokenValidTo = new Date();
+      accessTokenValidTo.setSeconds(accessTokenValidTo.getSeconds() + creds.expires_in - 120);
+      syncTasks(client);
+    })
+    .catch(function (err) {
+      console.log(
+        "Doesn\'t look like your refresh token is good, let\'s get a new one."
+      );
+      console.log("You should go to " + client.app.asanaAuthorizeUrl() +
+        " and copy the code there");
+      var rl = readline.createInterface({
+        input: process.stdin,
+        output: process.stdout
+      });
+      rl.question("What was the code?\n\nCode: ", function (code) {
+        client.app.accessTokenFromCode(code)
+          .then(function (credentials) {
+            console.log(
+              "Copy the following refresh token into your config file, and then restart this application:\n\n" +
+              credentials.refresh_token);
+            process.exit(0);
+          });
+      });
+    });
+}
+
+function main() {
+  var client = createClient();
+  getAccessToken(client);
 }
 
 setInterval(main, 120000);
